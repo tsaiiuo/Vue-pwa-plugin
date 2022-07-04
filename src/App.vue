@@ -1,30 +1,64 @@
 <template>
-  <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link>
-  </nav>
-  <router-view/>
+  <div>
+    <p class="error">{{ error }}</p>
+    <p class="decode-result">
+      Last result: <b>{{ result }}</b>
+    </p>
+
+    <qrcode-stream @init="onInit" :camera="front" @decode="onDecode" />
+  </div>
 </template>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-}
+<script>
+import { QrcodeStream } from "vue3-qrcode-reader";
 
-nav {
-  padding: 30px;
-}
+export default {
+  components: { QrcodeStream },
 
-nav a {
+  data() {
+    return {
+      result: "",
+      error: "",
+    };
+  },
+
+  methods: {
+    onDecode(result) {
+      this.result = result;
+      window.location.replace(result);
+    },
+
+    async onInit(promise) {
+      try {
+        const { capabilities } = await promise;
+      } catch (error) {
+        if (error.name === "NotAllowedError") {
+          this.error = "ERROR: you need to grant camera access permission";
+        } else if (error.name === "NotFoundError") {
+          this.error = "ERROR: no camera on this device";
+        } else if (error.name === "NotSupportedError") {
+          this.error = "ERROR: secure context required (HTTPS, localhost)";
+        } else if (error.name === "NotReadableError") {
+          this.error = "ERROR: is the camera already in use?";
+        } else if (error.name === "OverconstrainedError") {
+          this.error = "ERROR: installed cameras are not suitable";
+        } else if (error.name === "StreamApiNotSupportedError") {
+          this.error = "ERROR: Stream API is not supported in this browser";
+        } else if (error.name === "InsecureContextError") {
+          this.error =
+            "ERROR: Camera access is only permitted in secure context. Use HTTPS or localhost rather than HTTP.";
+        } else {
+          this.error = `ERROR: Camera error (${error.name})`;
+        }
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+.error {
   font-weight: bold;
-  color: #2c3e50;
-}
-
-nav a.router-link-exact-active {
-  color: #42b983;
+  color: red;
 }
 </style>
